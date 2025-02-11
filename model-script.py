@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 
 df = pd.read_csv('pricing.csv')
 
-inputs = df[['sku', 'price', 'order', 'duration', 'category']]
-outputs = df['quantity']
+X = df[['sku', 'price', 'order', 'duration', 'category']]
+y = df['quantity']
 
-inputs = tf.keras.layers.Input(shape = (df.shape[1],)) # comma is a trick to make sure it remains a tuple
-hidden1 = tf.keras.layers.Dense(units = 4, activation = 'sigmoid', name = 'hidden1')(inputs) # this is a class call
-hidden2 = tf.keras.layers.Dense(units = 4, activation = 'sigmoid', name = 'hidden2')(hidden1)
-hidden3 = tf.keras.layers.Dense(units = 4, activation = 'sigmoid', name = 'hidden3')(hidden2)
+inputs = tf.keras.layers.Input(shape = (X.shape[1],)) # comma is a trick to make sure it remains a tuple
+hidden1 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden1')(inputs) # this is a class call
+hidden2 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden2')(hidden1)
+hidden3 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden3')(hidden2)
 output = tf.keras.layers.Dense(units = 1, activation = 'linear', name = 'output')(hidden3)
 
 model = tf.keras.Model(inputs = inputs, outputs = output)
