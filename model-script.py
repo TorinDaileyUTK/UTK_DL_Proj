@@ -4,8 +4,16 @@ import matplotlib.pyplot as plt
 
 df = pd.read_csv('pricing.csv')
 
+# Convert 'sku', 'order', and 'category' to categorical variables
+df['sku'] = pd.Categorical(df['sku'])
+df['order'] = pd.Categorical(df['order'])
+df['category'] = pd.Categorical(df['category'])
+
 X = df[['sku', 'price', 'order', 'duration', 'category']] 
 y = df['quantity']
+
+# Convert categorical columns to numeric if needed, depending on the data type of 'category'
+X = pd.get_dummies(X, columns=['sku', 'order', 'category'])
 
 inputs = tf.keras.layers.Input(shape = (X.shape[1],)) # comma is a trick to make sure it remains a tuple
 hidden1 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden1')(inputs) # this is a class call
@@ -18,6 +26,22 @@ model = tf.keras.Model(inputs = inputs, outputs = output)
 model.compile(loss = 'mse', optimizer = tf.keras.optimizers.SGD(learning_rate = 0.001))
 
 model.fit(x = X, y = y, batch_size=1, epochs = 10) 
+
+#epoch 1 - loss = 2610
+#epoch 2 - loss = 2566
+#epoch 3 - loss = 2472
+#epoch 4 - loss = 2541
+#epoch 5 - loss = 2549
+#epoch 6 - loss = 2593
+#epoch 7 - loss = 2551
+#epoch 8 - loss = 2564
+#epoch 9 - loss = 2654
+#epoch 10 - loss = 2531
+
+#this is indicative of overfitting, less epochs needed?
+
+# Save the model in the default SavedModel format
+model.export('model1')  # This will save the model to a directory named 'my_model'
 
 #loss function
 history = model.fit(x = X, y = y, batch_size=1, epochs = 10)
@@ -58,3 +82,24 @@ plt.title('Feature Importance based on Weights')
 plt.ylabel('Importance')
 plt.xlabel('Feature')
 plt.show()
+
+
+
+# better model?
+inputs = tf.keras.layers.Input(shape = (X.shape[1],)) # comma is a trick to make sure it remains a tuple
+hidden1 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden1')(inputs) # this is a class call
+hidden2 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden2')(hidden1)
+hidden3 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden3')(hidden2)
+output = tf.keras.layers.Dense(units = 1, activation = 'linear', name = 'output')(hidden3)
+
+model = tf.keras.Model(inputs = inputs, outputs = output)
+
+model.compile(loss = tf.keras.losses.Huber(), optimizer = tf.keras.optimizers.SGD(learning_rate = 0.001))
+
+model.fit(x = X, y = y, batch_size=1, epochs = 10) 
+
+model.export('model2')
+
+# epoch 1 - loss = 19.3618
+# epoch 2 - loss = 19.3475
+# epoch 3 - loss = 19.45
