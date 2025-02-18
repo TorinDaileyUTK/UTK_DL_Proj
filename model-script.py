@@ -56,7 +56,7 @@ model.compile(loss='mse', optimizer=tf.keras.optimizers.SGD(learning_rate=0.001)
 X_other = X.drop(columns=['sku', 'order', 'category'])
 
 # Train the model
-model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=5)
+model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=10)
  
 # Save the model in the default SavedModel format
 model.export('model1')  # This will save the model to a directory named 'my_model'
