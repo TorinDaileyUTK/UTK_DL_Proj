@@ -1,6 +1,7 @@
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
+
 # Read the dataset
 df = pd.read_csv('pricing.csv')
 
@@ -17,9 +18,6 @@ df['category'] = df['category'].cat.codes
 # Define features and target variable
 X = df[['sku', 'price', 'order', 'duration', 'category']] 
 y = df['quantity']
-
-# Optionally: Convert categorical columns to one-hot encoding if needed for other columns
-# X = pd.get_dummies(X, columns=['category'])  # this will create one-hot encoding for 'category'
 
 # Define input layers for each feature
 sku_input = tf.keras.layers.Input(shape=(1,), name='sku_input')
@@ -102,28 +100,3 @@ plt.title('Feature Importance based on Weights')
 plt.ylabel('Importance')
 plt.xlabel('Feature')
 plt.show()
-
-
-
-# Add hidden layers
-hidden1 = tf.keras.layers.Dense(units=2, activation='elu')(concatenated)
-hidden2 = tf.keras.layers.Dense(units=2, activation='elu')(hidden1)
-hidden3 = tf.keras.layers.Dense(units=2, activation='elu')(hidden2)
-
-# Output layer
-output = tf.keras.layers.Dense(units=1, activation='linear')(hidden3)
-
-# Define the model
-model = tf.keras.Model(inputs=[sku_input, order_input, category_input, other_features], outputs=output)
-
-# Compile the model
-model.compile(loss=tf.keras.losses.Huber(), optimizer=tf.keras.optimizers.SGD(learning_rate=0.001))
-
-# Prepare the inputs for training (drop categorical columns from X)
-X_other = X.drop(columns=['sku', 'order', 'category'])
-
-# Train the model
-model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=5)
- 
-# Save the model in the default SavedModel format
-model.export('model2')  # This will save the model to a directory named 'my_model'
