@@ -1,7 +1,7 @@
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
-
+# Read the dataset
 df = pd.read_csv('pricing.csv')
 
 # Convert 'sku', 'order', and 'category' to categorical variables
@@ -9,37 +9,57 @@ df['sku'] = pd.Categorical(df['sku'])
 df['order'] = pd.Categorical(df['order'])
 df['category'] = pd.Categorical(df['category'])
 
+# Create integer labels for categorical variables
+df['sku'] = df['sku'].cat.codes
+df['order'] = df['order'].cat.codes
+df['category'] = df['category'].cat.codes
+
+# Define features and target variable
 X = df[['sku', 'price', 'order', 'duration', 'category']] 
 y = df['quantity']
 
-# Convert categorical columns to numeric if needed, depending on the data type of 'category'
-X = pd.get_dummies(X, columns=['sku', 'order', 'category'])
+# Optionally: Convert categorical columns to one-hot encoding if needed for other columns
+# X = pd.get_dummies(X, columns=['category'])  # this will create one-hot encoding for 'category'
 
-inputs = tf.keras.layers.Input(shape = (X.shape[1],)) # comma is a trick to make sure it remains a tuple
-hidden1 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden1')(inputs) # this is a class call
-hidden2 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden2')(hidden1)
-hidden3 = tf.keras.layers.Dense(units = 2, activation = 'sigmoid', name = 'hidden3')(hidden2)
-output = tf.keras.layers.Dense(units = 1, activation = 'linear', name = 'output')(hidden3)
+# Define input layers for each feature
+sku_input = tf.keras.layers.Input(shape=(1,), name='sku_input')
+order_input = tf.keras.layers.Input(shape=(1,), name='order_input')
+category_input = tf.keras.layers.Input(shape=(1,), name='category_input')
 
-model = tf.keras.Model(inputs = inputs, outputs = output)
+# Define embedding layers for SKU and category
+sku_embedding = tf.keras.layers.Embedding(input_dim=df['sku'].nunique(), output_dim=5)(sku_input)
+order_embedding = tf.keras.layers.Embedding(input_dim=df['order'].nunique(), output_dim=5)(order_input)
+category_embedding = tf.keras.layers.Embedding(input_dim=df['category'].nunique(), output_dim=5)(category_input)
 
-model.compile(loss = 'mse', optimizer = tf.keras.optimizers.SGD(learning_rate = 0.001))
+# Flatten the embeddings
+sku_embedding_flat = tf.keras.layers.Flatten()(sku_embedding)
+order_embedding_flat = tf.keras.layers.Flatten()(order_embedding)
+category_embedding_flat = tf.keras.layers.Flatten()(category_embedding)
 
-model.fit(x = X, y = y, batch_size=1, epochs = 10) 
+# Concatenate embeddings with other features (price, duration, etc.)
+other_features = tf.keras.layers.Input(shape=(X.shape[1] - 3,), name='other_features')  # Excluding categorical columns
+concatenated = tf.keras.layers.Concatenate()([sku_embedding_flat, order_embedding_flat, category_embedding_flat, other_features])
 
-#epoch 1 - loss = 2610
-#epoch 2 - loss = 2566
-#epoch 3 - loss = 2472
-#epoch 4 - loss = 2541
-#epoch 5 - loss = 2549
-#epoch 6 - loss = 2593
-#epoch 7 - loss = 2551
-#epoch 8 - loss = 2564
-#epoch 9 - loss = 2654
-#epoch 10 - loss = 2531
+# Add hidden layers
+hidden1 = tf.keras.layers.Dense(units=2, activation='sigmoid')(concatenated)
+hidden2 = tf.keras.layers.Dense(units=2, activation='sigmoid')(hidden1)
+hidden3 = tf.keras.layers.Dense(units=2, activation='sigmoid')(hidden2)
 
-#this is indicative of overfitting, less epochs needed?
+# Output layer
+output = tf.keras.layers.Dense(units=1, activation='linear')(hidden3)
 
+# Define the model
+model = tf.keras.Model(inputs=[sku_input, order_input, category_input, other_features], outputs=output)
+
+# Compile the model
+model.compile(loss='mse', optimizer=tf.keras.optimizers.SGD(learning_rate=0.001))
+
+# Prepare the inputs for training (drop categorical columns from X)
+X_other = X.drop(columns=['sku', 'order', 'category'])
+
+# Train the model
+model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=5)
+ 
 # Save the model in the default SavedModel format
 model.export('model1')  # This will save the model to a directory named 'my_model'
 
@@ -85,21 +105,25 @@ plt.show()
 
 
 
-# better model?
-inputs = tf.keras.layers.Input(shape = (X.shape[1],)) # comma is a trick to make sure it remains a tuple
-hidden1 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden1')(inputs) # this is a class call
-hidden2 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden2')(hidden1)
-hidden3 = tf.keras.layers.Dense(units = 2, activation = 'elu', name = 'hidden3')(hidden2)
-output = tf.keras.layers.Dense(units = 1, activation = 'linear', name = 'output')(hidden3)
+# Add hidden layers
+hidden1 = tf.keras.layers.Dense(units=2, activation='elu')(concatenated)
+hidden2 = tf.keras.layers.Dense(units=2, activation='elu')(hidden1)
+hidden3 = tf.keras.layers.Dense(units=2, activation='elu')(hidden2)
 
-model = tf.keras.Model(inputs = inputs, outputs = output)
+# Output layer
+output = tf.keras.layers.Dense(units=1, activation='linear')(hidden3)
 
-model.compile(loss = tf.keras.losses.Huber(), optimizer = tf.keras.optimizers.SGD(learning_rate = 0.001))
+# Define the model
+model = tf.keras.Model(inputs=[sku_input, order_input, category_input, other_features], outputs=output)
 
-model.fit(x = X, y = y, batch_size=1, epochs = 10) 
+# Compile the model
+model.compile(loss=tf.keras.losses.Huber(), optimizer=tf.keras.optimizers.SGD(learning_rate=0.001))
 
-model.export('model2')
+# Prepare the inputs for training (drop categorical columns from X)
+X_other = X.drop(columns=['sku', 'order', 'category'])
 
-# epoch 1 - loss = 19.3618
-# epoch 2 - loss = 19.3475
-# epoch 3 - loss = 19.45
+# Train the model
+model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=5)
+ 
+# Save the model in the default SavedModel format
+model.export('model2')  # This will save the model to a directory named 'my_model'
