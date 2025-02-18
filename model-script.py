@@ -1,6 +1,10 @@
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import time
+import psutil
+
+###### Data Cleaning ######
 
 # Read the dataset
 df = pd.read_csv('pricing.csv')
@@ -25,23 +29,32 @@ order_input = tf.keras.layers.Input(shape=(1,), name='order_input')
 category_input = tf.keras.layers.Input(shape=(1,), name='category_input')
 
 # Define embedding layers for SKU and category
-sku_embedding = tf.keras.layers.Embedding(input_dim=df['sku'].nunique(), output_dim=5)(sku_input)
-order_embedding = tf.keras.layers.Embedding(input_dim=df['order'].nunique(), output_dim=5)(order_input)
-category_embedding = tf.keras.layers.Embedding(input_dim=df['category'].nunique(), output_dim=5)(category_input)
+sku_embedding = tf.keras.layers.Embedding(input_dim=df['sku'].nunique() + 1, output_dim=5)(sku_input)
+order_embedding = tf.keras.layers.Embedding(input_dim=df['order'].nunique() + 1, output_dim=5)(order_input)
+category_embedding = tf.keras.layers.Embedding(input_dim=df['category'].nunique() + 1, output_dim=5)(category_input)
 
 # Flatten the embeddings
 sku_embedding_flat = tf.keras.layers.Flatten()(sku_embedding)
 order_embedding_flat = tf.keras.layers.Flatten()(order_embedding)
 category_embedding_flat = tf.keras.layers.Flatten()(category_embedding)
 
+# Extract numerical features (excluding categorical columns)
+X_other = X.drop(columns=['sku', 'order', 'category']).values
+
 # Concatenate embeddings with other features (price, duration, etc.)
-other_features = tf.keras.layers.Input(shape=(X.shape[1] - 3,), name='other_features')  # Excluding categorical columns
+other_features = tf.keras.layers.Input(shape=(X_other.shape[1],), name='other_features') # Excluding categorical columns
 concatenated = tf.keras.layers.Concatenate()([sku_embedding_flat, order_embedding_flat, category_embedding_flat, other_features])
 
+
+
+###### Model Building ######
+
+
+
 # Add hidden layers
-hidden1 = tf.keras.layers.Dense(units=2, activation='sigmoid')(concatenated)
-hidden2 = tf.keras.layers.Dense(units=2, activation='sigmoid')(hidden1)
-hidden3 = tf.keras.layers.Dense(units=2, activation='sigmoid')(hidden2)
+hidden1 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(concatenated)
+hidden2 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(hidden1)
+hidden3 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(hidden2)
 
 # Output layer
 output = tf.keras.layers.Dense(units=1, activation='linear')(hidden3)
@@ -52,14 +65,40 @@ model = tf.keras.Model(inputs=[sku_input, order_input, category_input, other_fea
 # Compile the model
 model.compile(loss='mse', optimizer=tf.keras.optimizers.SGD(learning_rate=0.001))
 
-# Prepare the inputs for training (drop categorical columns from X)
-X_other = X.drop(columns=['sku', 'order', 'category'])
 
+###### run with time and ram usage code ######
+
+def get_ram_usage():
+    return psutil.virtual_memory().used / (1024 ** 3)  # Convert to GB
+
+# Print initial RAM usage
+print(f"Initial RAM usage: {get_ram_usage():.2f} GB")
+
+start_time = time.time()
 # Train the model
-model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, batch_size=32, epochs=10)
- 
+model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, epochs=10) #batch_size=32
+
+end_time = time.time()
+
+total_time = end_time - start_time
+print(f"Total training time is: {total_time}")
+
+# Print RAM usage after training
+print(f"Final RAM usage: {get_ram_usage():.2f} GB")
+
 # Save the model in the default SavedModel format
 model.export('model1')  # This will save the model to a directory named 'my_model'
+
+#uses 12.18gb ram
+
+# Total training time is: 405.3 seconds
+
+# Final loss is 925.27
+
+####### Variable Importance ######
+
+
+
 
 #loss function
 history = model.fit(x = X, y = y, batch_size=1, epochs = 10)
