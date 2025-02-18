@@ -89,8 +89,11 @@ print(f"Final RAM usage: {get_ram_usage():.2f} GB")
 # Save the model in the default SavedModel format
 model.export('model1')  # This will save the model to a directory named 'my_model'
 
+#uses 12.18gb ram
 
+# Total training time is: 405.3 seconds
 
+# Final loss is 925.27
 
 ####### Variable Importance ######
 
