@@ -89,14 +89,16 @@ print(f"Final RAM usage: {get_ram_usage():.2f} GB")
 # Save the model in the default SavedModel format
 model.export('model1')  # This will save the model to a directory named 'my_model'
 
-#uses 12.18gb ram
 
+#uses 12.18gb ram
 # Total training time is: 405.3 seconds
 
 # Final loss is 925.27
 
 ####### Variable Importance ######
 
+# load model:
+model = tf.saved_model.load("model1")
 
 
 
@@ -108,34 +110,52 @@ pd.DataFrame(history.history['loss']).plot(figsize=(8,5))
 plt.show()
 
 
-#feature importance I think
+#feature importance
 
 import numpy as np
 
-for i, layer in enumerate(model.layers):
-    print(f"Layer {i}: {layer.name}, Weights: {len(layer.get_weights())}")
+# check where the inpit weights were
+for var in model.variables:
+    print(var.name, var.shape)
 
-# extract weights from hidden layer 1 
-weights = model.layers[1].get_weights()[0]  
 
-# sum absolute values of weights for each feature 
+#extract weights from first layer whcih is dense/kernel:0 (17, 1000) this was 4th in the above output therefor varaibles[3]
+weights = model.variables[3].numpy() 
+ 
+
+# sum absolute values of weights from first layer
 feature_importance = np.sum(np.abs(weights), axis=1)
 
+feature_groups = {
+    'sku': feature_importance[:5],       # First 5 values were sku embedding
+    'order': feature_importance[5:10],   # Next 5 values were order embedding
+    'category': feature_importance[10:15], # Next 5 values were category embedding
+    'price': feature_importance[15],     # only one value 
+    'duration': feature_importance[16]   # only one vale
+}
+# aggreagte importance
+aggregated_importance = {
+    feature: np.sum(values) if isinstance(values, np.ndarray) else values
+    for feature, values in feature_groups.items()
+}
 
+# Convert to DataFrame
 importance_df = pd.DataFrame({
-    'Feature': X.columns,
-    'Importance': feature_importance
+    'Feature': aggregated_importance.keys(),
+    'Importance': aggregated_importance.values()
 })
 
-
+# Sort by importance
 importance_df = importance_df.sort_values(by='Importance', ascending=False)
 
-
+#check results
 print(importance_df)
 
-
+# Plot feature importance
 importance_df.plot(kind='bar', x='Feature', y='Importance', legend=False)
-plt.title('Feature Importance based on Weights')
+plt.title('Feature Importance Based on Weights')
 plt.ylabel('Importance')
 plt.xlabel('Feature')
 plt.show()
+
+
