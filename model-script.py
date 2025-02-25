@@ -3,6 +3,8 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import time
 import psutil
+from sklearn.preprocessing import StandardScaler
+
 
 ###### Data Cleaning ######
 
@@ -18,6 +20,10 @@ df['category'] = pd.Categorical(df['category'])
 df['sku'] = df['sku'].cat.codes
 df['order'] = df['order'].cat.codes
 df['category'] = df['category'].cat.codes
+
+# Standardizing 'price' and 'duration'
+scaler = StandardScaler()
+df[['price', 'duration']] = scaler.fit_transform(df[['price', 'duration']])
 
 # Define features and target variable
 X = df[['sku', 'price', 'order', 'duration', 'category']] 
@@ -41,6 +47,7 @@ category_embedding_flat = tf.keras.layers.Flatten()(category_embedding)
 # Extract numerical features (excluding categorical columns)
 X_other = X.drop(columns=['sku', 'order', 'category']).values
 
+
 # Concatenate embeddings with other features (price, duration, etc.)
 other_features = tf.keras.layers.Input(shape=(X_other.shape[1],), name='other_features') # Excluding categorical columns
 concatenated = tf.keras.layers.Concatenate()([sku_embedding_flat, order_embedding_flat, category_embedding_flat, other_features])
@@ -52,9 +59,9 @@ concatenated = tf.keras.layers.Concatenate()([sku_embedding_flat, order_embeddin
 
 
 # Add hidden layers
-hidden1 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(concatenated)
-hidden2 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(hidden1)
-hidden3 = tf.keras.layers.Dense(units=1000, activation='sigmoid')(hidden2)
+hidden1 = tf.keras.layers.Dense(units=500, activation='sigmoid')(concatenated)
+hidden2 = tf.keras.layers.Dense(units=500, activation='sigmoid')(hidden1)
+hidden3 = tf.keras.layers.Dense(units=500, activation='sigmoid')(hidden2)
 
 # Output layer
 output = tf.keras.layers.Dense(units=1, activation='linear')(hidden3)
@@ -76,7 +83,9 @@ print(f"Initial RAM usage: {get_ram_usage():.2f} GB")
 
 start_time = time.time()
 # Train the model
-model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, epochs=10) #batch_size=32
+#model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, epochs=10) #batch_size=32
+
+history = model.fit(x=[df['sku'], df['order'], df['category'], X_other], y=y, epochs=10) #batch_size=32
 
 end_time = time.time()
 
@@ -87,20 +96,81 @@ print(f"Total training time is: {total_time}")
 print(f"Final RAM usage: {get_ram_usage():.2f} GB")
 
 # Save the model in the default SavedModel format
-model.export('model1')  # This will save the model to a directory named 'my_model'
-
+#model.export('model1')  # This will save the model to a directory named 'my_model'
 
 #uses 12.18gb ram
 # Total training time is: 405.3 seconds
 
 # Final loss is 925.27
 
+model.export('model1_s')  # This will save the model to a directory named 'model1_s'
+
+
+
+####### Model Evaluation - Loss #######
+
+
+# Evaluate the model performance
+loss = model.evaluate([df['sku'], df['order'], df['category'], X_other], y)
+print(f"Model loss: {loss}")
+
+
+# Plot training loss
+pd.DataFrame(history.history['loss']).plot(figsize=(8,5))
+plt.title('Training Loss Over Epochs')
+plt.ylabel('Loss')
+plt.xlabel('Epochs')
+plt.show()
+
+
+
+
+####### Model Evaluation - R^2 #######
+
+from sklearn.metrics import r2_score
+
+# Define column names manually (update this based on your actual dataset structure)
+column_names = ['sku', 'price', 'order', 'duration', 'category', 'quantity']
+
+# Load the CSV without a header and assign column names
+df_test = pd.read_csv('pricing_test.csv', names=column_names, header=None)
+
+
+# Standardizing 'price' and 'duration'
+scaler = StandardScaler()
+df_test[['price', 'duration']] = scaler.fit_transform(df_test[['price', 'duration']])
+
+
+# Convert categorical variables into codes (ensure consistency with training data)
+# Encode categories using training set categories
+df_test['category'] = pd.Categorical(df_test['category'], categories=df['category'].unique()).codes
+
+# Encode SKUs separately for test set (not linked to training SKUs)
+df_test['sku'] = df_test['sku'].astype('category').cat.codes
+
+df_test['order'] = pd.Categorical(df_test['order'], categories=df['order'].astype('category').cat.categories).codes
+
+# Extract test features and target variable
+X_test = df_test[['sku', 'price', 'order', 'duration', 'category']]
+y_test = df_test['quantity']
+
+# Extract test inputs
+X_other_test = X_test.drop(columns=['sku', 'order', 'category']).values  # Non-categorical features
+X_test_inputs = [df_test['sku'], df_test['order'], df_test['category'], X_other_test]
+
+# Make predictions
+y_pred = model.predict(X_test_inputs)
+
+# Compute R² score
+r2 = r2_score(y_test, y_pred)
+print(f"R² score: {r2:.4f}")
+
+
+
 ####### Variable Importance ######
 
 # load model:
 model = tf.saved_model.load("model1")
-
-
 
 #loss function
 history = model.fit(x = X, y = y, batch_size=1, epochs = 10)
@@ -114,7 +184,7 @@ plt.show()
 
 import numpy as np
 
-# check where the inpit weights were
+# check where the input weights were
 for var in model.variables:
     print(var.name, var.shape)
 
@@ -157,5 +227,4 @@ plt.title('Feature Importance Based on Weights')
 plt.ylabel('Importance')
 plt.xlabel('Feature')
 plt.show()
-
 
