@@ -455,3 +455,36 @@ plt.xlabel("Features")
 plt.ylabel("R² Drop (Importance)")
 plt.title("Feature Importance Based on R² Drop")
 plt.show()
+
+
+# Spruced up plot
+import matplotlib.pyplot as plt
+
+# Define colors from your PowerPoint theme
+bar_color = "#3c6d93"  # Blue shade for bars
+edge_color = "white"   # White edges for contrast
+text_color = "white"   # White text for readability
+
+# Set dark background
+plt.style.use("dark_background")
+
+# Create figure
+plt.figure(figsize=(10, 6), dpi=150)
+
+# Plot bar chart with customized colors
+plt.bar(features, importance_values, color=bar_color, edgecolor=edge_color, linewidth=1.2)
+
+# Add labels and title with white text
+plt.xlabel("Features", fontsize=14, labelpad=10, color=text_color)
+plt.ylabel("R² Drop (Importance)", fontsize=14, labelpad=10, color=text_color)
+plt.title("Feature Importance Based on R² Drop", fontsize=16, fontweight='bold', pad=15, color=text_color)
+
+# Improve tick labels visibility
+plt.xticks(rotation=45, ha="right", fontsize=12, color=text_color)
+plt.yticks(fontsize=12, color=text_color)
+
+# Add subtle horizontal gridlines
+plt.grid(axis="y", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+
+# Display the plot
+plt.show()
