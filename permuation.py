@@ -80,3 +80,42 @@ plt.xlabel('R² Drop (Feature Importance)')
 plt.ylabel('Feature')
 plt.title('Feature Importance via Permutation')
 plt.show()
+
+# Spruce up the plot
+import matplotlib.pyplot as plt
+
+# Define colors from your PowerPoint theme
+bar_color = "#4143a5"  # Purple-blue shade for bars
+edge_color = "white"   # White edges for contrast
+text_color = "white"   # White text for readability
+
+# Set dark background style
+plt.style.use("dark_background")
+
+# Sort features by importance (largest to smallest)
+sorted_features = sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+features, importance_values = zip(*sorted_features)  # Unpack sorted data
+
+# Create figure
+plt.figure(figsize=(10, 5), dpi=150)
+
+# Plot horizontal bar chart with sorted values
+plt.barh(features, importance_values, color=bar_color, edgecolor=edge_color, linewidth=1.2)
+
+# Add labels and title with white text
+plt.xlabel("R² Drop (Feature Importance)", fontsize=14, labelpad=10, color=text_color)
+plt.ylabel("Feature", fontsize=14, labelpad=10, color=text_color)
+plt.title("Feature Importance via Permutation", fontsize=16, fontweight='bold', pad=15, color=text_color)
+
+# Improve tick labels visibility
+plt.xticks(fontsize=12, color=text_color)
+plt.yticks(fontsize=12, color=text_color)
+
+# Add subtle vertical gridlines for readability
+plt.grid(axis="x", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+
+# Invert y-axis so the most important feature is at the top
+plt.gca().invert_yaxis()
+
+# Display the plot
+plt.show()
