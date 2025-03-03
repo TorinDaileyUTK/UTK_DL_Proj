@@ -151,3 +151,7 @@ def plot_pdp(feature, model, df):
 
 # Create PDP for 'price'
 plot_pdp('price', model, df)
+plot_pdp('sku', model, df)
+plot_pdp('duration', model, df)
+plot_pdp('category', model, df)
+plot_pdp('order', model, df)
