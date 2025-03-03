@@ -119,3 +119,35 @@ plt.gca().invert_yaxis()
 
 # Display the plot
 plt.show()
+
+
+#### partial dependency
+from sklearn.inspection import partial_dependence
+import seaborn as sns
+
+# Define a function to create PDP
+def plot_pdp(feature, model, df):
+    feature_values = np.linspace(df[feature].min(), df[feature].max(), 10)
+    pdp_values = []
+
+    for value in feature_values:
+        temp_df = df.copy()
+        temp_df[feature] = value  
+
+        X_other_temp = temp_df[['price', 'duration']].values.astype(np.float32)
+        y_pred = model.predict([temp_df['sku'], temp_df['order'], temp_df['category'], X_other_temp]).ravel()
+        
+        pdp_values.append(np.mean(y_pred))
+
+    # Plot PDP
+    plt.figure(figsize=(8, 5))
+    sns.lineplot(x=feature_values, y=pdp_values, color="#4143a5")
+    plt.xlabel(feature.capitalize(), fontsize=12, color="white")
+    plt.ylabel("Predicted Quantity", fontsize=12, color="white")
+    plt.title(f"Partial Dependence Plot for '{feature}'", fontsize=14, color="white")
+    plt.grid(axis="both", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+    plt.style.use("dark_background")
+    plt.show()
+
+# Create PDP for 'price'
+plot_pdp('price', model, df)
