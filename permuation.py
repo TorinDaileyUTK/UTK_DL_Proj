@@ -127,7 +127,7 @@ import seaborn as sns
 
 # Define a function to create PDP
 def plot_pdp(feature, model, df):
-    feature_values = np.linspace(df[feature].min(), df[feature].max(), 10)
+    feature_values = np.linspace(df[feature].min(), df[feature].max(), 20)
     pdp_values = []
 
     for value in feature_values:
