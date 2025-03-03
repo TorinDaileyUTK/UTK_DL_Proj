@@ -122,7 +122,43 @@ plt.ylabel('Loss')
 plt.xlabel('Epochs')
 plt.show()
 
+# Spruce up the plot
+import pandas as pd
+import matplotlib.pyplot as plt
 
+# Define colors based on your hex codes
+line_color = "#3c6d93"  # A blue shade from your palette
+marker_color = "#412d90"  # A purple shade from your palette
+text_color = "white"
+
+# Set dark background style
+plt.style.use("dark_background")
+
+# Create figure with size and resolution
+plt.figure(figsize=(10, 6), dpi=150)
+
+# Plot the loss curve
+loss_df = pd.DataFrame(history.history['loss'])
+plt.plot(loss_df, marker='o', linestyle='-', color=line_color, 
+         linewidth=2, markersize=6, markerfacecolor=marker_color, markeredgecolor="white", label="Training Loss")
+
+# Add title and labels with white text
+plt.title("Training Loss Over Epochs", fontsize=16, fontweight='bold', pad=15, color=text_color)
+plt.xlabel("Epochs", fontsize=14, labelpad=10, color=text_color)
+plt.ylabel("Loss", fontsize=14, labelpad=10, color=text_color)
+
+# Improve tick label visibility
+plt.xticks(fontsize=12, color=text_color)
+plt.yticks(fontsize=12, color=text_color)
+
+# Customize gridlines to be subtle
+plt.grid(color="gray", linestyle="--", linewidth=0.5, alpha=0.5)
+
+# Add a legend
+plt.legend(fontsize=12, loc="upper right", frameon=False, facecolor="black", edgecolor="white", labelcolor=text_color)
+
+# Display the plot
+plt.show()
 
 
 ####### Model Evaluation - R^2 #######
@@ -228,3 +264,68 @@ plt.ylabel('Importance')
 plt.xlabel('Feature')
 plt.show()
 
+# Spruce up the plot
+import matplotlib.pyplot as plt
+
+# Define colors from your PowerPoint theme
+bar_color = "#35656f"  # Blue shade for bars
+edge_color = "white"   # White edges for contrast
+text_color = "white"   # White text for readability
+
+# Set dark background style
+plt.style.use("dark_background")
+
+# Sort DataFrame by Importance (largest to smallest)
+importance_df = importance_df.sort_values(by="Importance", ascending=False)
+
+# Create figure
+plt.figure(figsize=(10, 6), dpi=150)
+
+# Plot bar chart with sorted values
+plt.bar(importance_df["Feature"], importance_df["Importance"], color=bar_color, edgecolor=edge_color, linewidth=1.2)
+
+# Add labels and title with white text
+plt.xlabel("Feature", fontsize=14, labelpad=10, color=text_color)
+plt.ylabel("Importance", fontsize=14, labelpad=10, color=text_color)
+plt.title("Feature Importance Based on Weights", fontsize=16, fontweight='bold', pad=15, color=text_color)
+
+# Improve tick labels visibility
+plt.xticks(rotation=45, ha="right", fontsize=12, color=text_color)
+plt.yticks(fontsize=12, color=text_color)
+
+# Add subtle horizontal gridlines
+plt.grid(axis="y", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+
+# Display the plot
+plt.show()
+
+
+### Partial Dependence
+ind = 2 #toggle this between 1 to get partial plot for X1 and 2 to get partial plot for X2
+
+
+#step 2.1
+v = np.unique(X.iloc[:, ind])  # Use .iloc to select column by index
+
+
+#step 2.2
+means = []
+for i in v:
+    #2.2.1: create novel data set where variable only takes on that value
+    X_cp = np.copy(X)
+    X_cp[:,ind] = i
+    #2.2.2 predict response
+    for layer in model.input:
+        print(layer.shape)
+    input_sizes = [1,1,1,2]
+    inputs = np.split(X_cp, np.cumsum(input_sizes)[:-1], axis=1)
+    yhat = model.predict(inputs)
+    #2.2.3 mean
+    means.append(np.mean(yhat))
+    
+    
+import matplotlib.pyplot as plt    
+
+
+plt.plot(v, means)
+plt.show()
