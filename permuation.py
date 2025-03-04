@@ -151,7 +151,81 @@ def plot_pdp(feature, model, df):
 
 # Create PDP for 'price'
 plot_pdp('price', model, df)
-plot_pdp('sku', model, df)
 plot_pdp('duration', model, df)
+
+# PDP for SKU
+feature = 'sku'
+df['sku'].unique()
+feature_values = df['sku'].value_counts().head(15).index.tolist()
+pdp_values = []
+
+for value in feature_values:
+    temp_df = df.copy()
+    temp_df[feature] = value  
+
+    X_other_temp = temp_df[['price', 'duration']].values.astype(np.float32)
+    y_pred = model.predict([temp_df['sku'], temp_df['order'], temp_df['category'], X_other_temp]).ravel()
+        
+    pdp_values.append(np.mean(y_pred))
+
+# Plot PDP
+plt.figure(figsize=(8, 5))
+sns.barplot(x=feature_values, y=pdp_values, color="#4143a5")
+plt.xlabel(feature.upper(), fontsize=12, color="white")
+plt.ylabel("Predicted Quantity", fontsize=12, color="white")
+plt.title(f"Partial Dependence Plot for {feature.upper()}", fontsize=14, color="white")
+plt.grid(axis="both", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+plt.style.use("dark_background")
+plt.show()
+
+
+# PDP For Category
+def plot_pdp(feature, model, df):
+    feature_values = df[feature].unique()
+    pdp_values = []
+
+    for value in feature_values:
+        temp_df = df.copy()
+        temp_df[feature] = value  
+
+        X_other_temp = temp_df[['price', 'duration']].values.astype(np.float32)
+        y_pred = model.predict([temp_df['sku'], temp_df['order'], temp_df['category'], X_other_temp]).ravel()
+        
+        pdp_values.append(np.mean(y_pred))
+
+    # Plot PDP
+    plt.figure(figsize=(8, 5))
+    sns.barplot(x=feature_values, y=pdp_values, color="#4143a5")
+    plt.xlabel(feature.capitalize(), fontsize=12, color="white")
+    plt.ylabel("Predicted Quantity", fontsize=12, color="white")
+    plt.title(f"Partial Dependence Plot for {feature.capitalize()}", fontsize=14, color="white")
+    plt.grid(axis="both", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+    plt.style.use("dark_background")
+    plt.show()
+
 plot_pdp('category', model, df)
-plot_pdp('order', model, df)
+
+# PDP for Order
+feature = 'order'
+feature_values = df['order'].value_counts().head(10).index.tolist()
+pdp_values = []
+
+for value in feature_values:
+    temp_df = df.copy()
+    temp_df[feature] = value  
+
+    X_other_temp = temp_df[['price', 'duration']].values.astype(np.float32)
+    y_pred = model.predict([temp_df['sku'], temp_df['order'], temp_df['category'], X_other_temp]).ravel()
+        
+    pdp_values.append(np.mean(y_pred))
+
+# Plot PDP
+plt.figure(figsize=(8, 5))
+sns.barplot(x=feature_values, y=pdp_values, color="#4143a5")
+plt.xlabel(feature.capitalize(), fontsize=12, color="white")
+plt.ylabel("Predicted Quantity", fontsize=12, color="white")
+plt.title(f"Partial Dependence Plot for {feature.capitalize()}", fontsize=14, color="white")
+plt.grid(axis="both", linestyle="--", linewidth=0.6, alpha=0.5, color="gray")
+plt.style.use("dark_background")
+plt.show()
+
